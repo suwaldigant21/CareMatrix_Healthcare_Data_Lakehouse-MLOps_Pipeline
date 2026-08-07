@@ -1,0 +1,44 @@
+version: 2
+
+sources:
+  - name: carematrix_raw
+    # Real bronze/silver tables are registered in carematrix_catalog_db in the Glue Data Catalog.
+    # (carematrix_dev_db only holds the dbt seeds.)
+    database: awsdatacatalog
+    schema: carematrix_catalog_db
+    description: "Raw and Silver datasets registered in the AWS Glue Data Catalog from S3."
+
+    tables:
+      - name: bronze_beneficiary_summary
+        description: "Raw Medicare beneficiary demographics data sitting in S3 bronze bucket."
+        columns:
+          - name: desynpuf_id
+            description: "Synthetic patient ID (raw bronze, not yet hashed)."
+            tests:
+              - not_null
+
+      - name: inpatient_claims
+        description: "Silver layer inpatient claims with clean claim dates and ICD-9 diagnosis codes."
+        columns:
+          - name: patient_id_hash
+            description: "Hashed synthetic patient ID (masked in the PySpark Silver job)."
+            tests:
+              - not_null
+          - name: claim_year
+            description: "Year the claim was processed."
+
+models:
+  - name: stg_beneficiary_demographics
+    description: "Staged patient demographics preparing age, sex, and entitlement codes for risk adjustment."
+    columns:
+      - name: desynpuf_id
+        description: "Salted SHA-256 hash of the raw DESYNPUF_ID."
+        tests:
+          - not_null
+
+  - name: stg_silver_inpatient_claims
+    description: "Staged inpatient claims with clean claim dates and diagnosis codes."
+    columns:
+      - name: patient_id_hash
+        tests:
+          - not_null

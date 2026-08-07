@@ -1,0 +1,29 @@
+services:
+  fastapi_server:
+    build: ./mock_api
+    ports:
+      - "8000:8000"
+    environment:
+      - CAREMATRIX_API_KEY=${CAREMATRIX_API_KEY:-carematrix-demo-token}
+    networks:
+      - carematrix_net
+
+  n8n_orchestrator:
+    image: docker.n8n.io/n8nio/n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - GENERIC_TIMEZONE=Etc/UTC
+      - TZ=Etc/UTC
+      - CAREMATRIX_API_KEY=${CAREMATRIX_API_KEY:-carematrix-demo-token}
+    volumes:
+      - ./n8n_data:/home/node/.n8n
+    networks:
+      - carematrix_net
+    depends_on:
+      - fastapi_server
+
+networks:
+  carematrix_net:
+    driver: bridge

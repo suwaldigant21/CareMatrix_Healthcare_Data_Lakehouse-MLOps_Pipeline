@@ -1,0 +1,12 @@
+carematrix_dbt:
+  target: dev
+  outputs:
+    dev:
+      type: athena
+      database: awsdatacatalog
+      schema: carematrix_dev_db
+      region_name: us-east-1
+      s3_staging_dir: "{{ env_var('CAREMATRIX_S3_STAGING_DIR', 's3://carematrix-lakehouse-dev-demo/athena-results/') }}"
+      s3_data_dir: "{{ env_var('CAREMATRIX_S3_DATA_DIR', 's3://carematrix-lakehouse-dev-demo/') }}"
+      s3_data_naming: table_unique
+      threads: 4

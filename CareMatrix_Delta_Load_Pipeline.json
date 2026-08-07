@@ -1,0 +1,325 @@
+{
+  "name": "CareMatrix_Delta_Load_Pipeline",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "19c6e8b0-a219-47e3-ab60-d462d66709ff",
+      "name": "When clicking 'Execute workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// const staticData = $getWorkflowStaticData(\"global\");\n// delete staticData.lastRun;\n// return { reset: true };\n\n\n// Access n8n's permanent memory\nconst staticData = $getWorkflowStaticData(\"global\");\n\n// If it's the first run, start at Jan 1, 2026. Otherwise, use the saved watermark.\nconst lastRun = staticData.lastRun || '2026-01-01T00:00:00';\n\nreturn {\n  page: 1,\n  limit: 1000,\n  lastRun: lastRun\n};"
+      },
+      "id": "b04b7790-6ed5-42ae-9702-9140a3b64a7c",
+      "name": "Init Watermark & Page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://fastapi_server:8000/api/v1/claims",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "page",
+              "value": "={{ $json.page }}"
+            },
+            {
+              "name": "limit",
+              "value": "={{ $json.limit }}"
+            },
+            {
+              "name": "updated_after",
+              "value": "={{ $json.lastRun }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-KEY",
+              "value": "carematrix-demo-token"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ba4dac2d-0847-4103-a362-458cd6abeaef",
+      "name": "Fetch Claims API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        192,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.item.json;\nconst jsonString = JSON.stringify(data.data, null, 2);\n\nreturn [{\n  json: {\n    page: Number(data.page),\n    total_pages: Number(data.total_pages)\n  },\n  binary: {\n    data: {\n      data: Buffer.from(jsonString).toString('base64'),\n      mimeType: 'application/json',\n      fileName: `claims_batch_page_${data.page}.json`\n    }\n  }\n}];"
+      },
+      "id": "d674e991-2a45-4665-b6e2-d13fd68bd2f0",
+      "name": "Prepare Binary JSON File",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "carematrix-lakehouse-dev-demo",
+        "fileName": "=bronze/inpatient_claims/claims_batch_page_{{ $json.page }}.json",
+        "additionalFields": {}
+      },
+      "id": "3363823a-2039-45d0-acec-e4aa23c3fdd2",
+      "name": "Upload to S3 Bronze",
+      "type": "n8n-nodes-base.awsS3",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        -144
+      ],
+      "credentials": {
+        "aws": {
+          "id": "<your-aws-credential-id>",
+          "name": "AWS (IAM) account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "page",
+              "value": "={{ $json.page + 1 }}",
+              "type": "number"
+            },
+            {
+              "id": "2",
+              "name": "limit",
+              "value": 1000,
+              "type": "number"
+            },
+            {
+              "id": "3",
+              "name": "lastRun",
+              "value": "={{ $('Init Watermark & Page').item.json.lastRun }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "69bb1729-f7a4-4e5a-ae14-3d9ac536aac4",
+      "name": "Next Page",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1312,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData(\"global\");\nconst now = new Date();\nstaticData.lastRun = now.toISOString().split('.')[0]; // → \"2026-07-30T03:45:12\"\n\nreturn { \n  status: \"Success\", \n  new_watermark: staticData.lastRun \n};\n"
+      },
+      "id": "31c6d605-01c0-4460-9a7c-4290b774ad1d",
+      "name": "Update Watermark",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1312,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "043c1469-4188-45fc-9772-e3e75795d93f",
+              "leftValue": "={{ $json.total_records }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        624,
+        -48
+      ],
+      "id": "f1867030-b73f-46ec-9dad-4931a6d16b68",
+      "name": "Is there new data?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4c023d69-18d1-4abe-8fce-c21b6d4615f4",
+              "leftValue": "={{ $json.page }}",
+              "rightValue": "={{ $json.total_pages }}",
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1088,
+        64
+      ],
+      "id": "48e69a55-100a-4b90-b55e-d23858172ffa",
+      "name": "Has more pages?"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "Init Watermark & Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init Watermark & Page": {
+      "main": [
+        [
+          {
+            "node": "Fetch Claims API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Claims API": {
+      "main": [
+        [
+          {
+            "node": "Is there new data?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Binary JSON File": {
+      "main": [
+        [
+          {
+            "node": "Upload to S3 Bronze",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Has more pages?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Next Page": {
+      "main": [
+        [
+          {
+            "node": "Fetch Claims API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is there new data?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Binary JSON File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has more pages?": {
+      "main": [
+        [
+          {
+            "node": "Next Page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Watermark",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "ebc48c99-23c9-49e4-98ec-e2ae2884106c",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "id": "kga9muvUQ6gvI6gB",
+  "tags": []
+}

@@ -1,0 +1,64 @@
+# ============================================================
+# CareMatrix Lakehouse - .gitignore
+# ============================================================
+
+# --- Secrets & Environment ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.jks
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# --- Virtual environments ---
+.venv/
+venv/
+
+# --- Terraform (state contains live AWS access keys) ---
+terraform/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+*.tfvars.json
+crash.log
+override.tf
+override.tf.json
+
+# --- dbt runtime artifacts ---
+carematrix_dbt/target/
+carematrix_dbt/logs/
+carematrix_dbt/dbt_packages/
+carematrix_dbt/.user.yml
+*.pid
+
+# --- n8n runtime data (DB holds encrypted credentials + executions) ---
+# Workflow SOURCE exports (CareMatrix_Delta_Load_Pipeline.json) stay tracked.
+n8n_data/
+
+# --- Raw data & third-party reference files (kept local, not source) ---
+# DE-SynPUF beneficiary summary files: publicly re-downloadable from CMS.
+2008_Beneficiary_Summary_File.csv
+2009_Beneficiary_Summary_File.csv
+2010_Beneficiary_Summary_File.csv
+# Claims data served by the mock API (generated/derived from DE-SynPUF).
+mock_api/inpatient_claims.csv
+# Official CMS-HCC V12 reference software (redistributed by CMS).
+HCCSoftware2010/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+.idea/
+.vscode/

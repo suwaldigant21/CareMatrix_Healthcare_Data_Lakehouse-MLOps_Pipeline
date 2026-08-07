@@ -1,0 +1,1 @@
+{{ apply_hcc_hierarchy(ref('int_patient_hcc_flags'), max_hcc=177) }}

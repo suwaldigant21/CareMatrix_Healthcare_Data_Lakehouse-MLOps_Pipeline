@@ -1,0 +1,61 @@
+{
+  "n_samples": 45205,
+  "n_train": 36164,
+  "n_test": 9041,
+  "positive_rate": 0.11436787965932972,
+  "roc_auc": 0.7778345060257961,
+  "precision": 0.23723821989528796,
+  "recall": 0.7011605415860735,
+  "f1": 0.3545232273838631,
+  "thresholds": [
+    {
+      "threshold": 0.3,
+      "precision": 0.1738544474393531,
+      "recall": 0.8733075435203095,
+      "f1": 0.28998073217726394
+    },
+    {
+      "threshold": 0.5,
+      "precision": 0.23723821989528796,
+      "recall": 0.7011605415860735,
+      "f1": 0.3545232273838631
+    },
+    {
+      "threshold": 0.7,
+      "precision": 0.3671875,
+      "recall": 0.4090909090909091,
+      "f1": 0.3870082342177493
+    }
+  ],
+  "scale_pos_weight": 7.7437137330754355,
+  "features": [
+    "demographic_weight",
+    "disease_weight",
+    "raw_raf_score",
+    "age_band_0_64",
+    "age_band_65_69",
+    "age_band_70_74",
+    "age_band_75_79",
+    "age_band_80_84",
+    "age_band_85_plus",
+    "sex_code_F",
+    "sex_code_M"
+  ],
+  "age_bins": [
+    0,
+    65,
+    70,
+    75,
+    80,
+    85,
+    200
+  ],
+  "age_labels": [
+    "0_64",
+    "65_69",
+    "70_74",
+    "75_79",
+    "80_84",
+    "85_plus"
+  ]
+}
