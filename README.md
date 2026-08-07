@@ -1,4 +1,4 @@
-# CareMatrix (RiskLens) — Healthcare Data Lakehouse & Risk-Adjustment MLOps Pipeline
+# CareMatrix — Healthcare Data Lakehouse & Risk-Adjustment MLOps Pipeline
 
 An end-to-end, serverless healthcare data engineering pipeline built on CMS's
 **DE-SynPUF** public synthetic Medicare dataset. It ingests raw inpatient
@@ -59,21 +59,19 @@ building the ML piece in an isolated notebook disconnected from the pipeline.
 ---
 
 ## 2. Architecture
-
-> 📸 **Screenshot placement:** if you have an exported architecture diagram
-> (e.g. from draw.io or Excalidraw), place it here as
-> `docs/screenshots/architecture_diagram.png`. Otherwise the ASCII diagram
-> below is accurate and can stand alone.
+<br>
+<img width="1774" height="887" alt="architecture_diagram" src="https://github.com/user-attachments/assets/3c42c5e6-2691-41b0-a20b-d9f4b93679f3" />
+<br>
 
 ```
  INGESTION                BRONZE                SILVER                  GOLD                    ML / BI
-┌────────────┐    ┌──────────────────┐  ┌────────────────────┐  ┌──────────────────────┐  ┌──────────────────────┐
-│ n8n         │    │ S3: bronze/       │  │ AWS Glue PySpark    │  │ dbt Core + Athena     │  │ XGBoost readmission   │
-│ (watermark, │───▶│  inpatient_claims │─▶│ bronze_to_silver.py │─▶│ seeds → staging →     │─▶│ model (pyathena pull) │
-│ paginated   │    │  (JSONL)          │  │ rename, PHI hash,   │  │ intermediate → mart   │  │                       │
-│ FastAPI     │    │ beneficiary_      │  │ dedup, sentinel     │  │ fct_patient_          │  │ Power BI dashboard    │
-│ mock claims)│    │  summary (CSV)    │  │ partition, cast     │  │ risk_scores           │  │ (Simba Athena ODBC)   │
-└────────────┘    └──────────────────┘  └────────────────────┘  └──────────────────────┘  └──────────────────────┘
+┌────────────┐     ┌──────────────────┐    ┌────────────────────┐    ┌──────────────────────┐   ┌──────────────────────┐
+│ n8n        │     │ S3: bronze/      │    │ AWS Glue PySpark   │    │ dbt Core + Athena    │   │ XGBoost readmission  │
+│ (watermark,│───▶│  inpatient_claims │──▶│bronze_to_silver.py │──▶│ seeds → staging →    │──▶│ model (pyathena pull)│
+│ paginated  │     │  (JSONL)         │    │ rename, PHI hash,  │    │ intermediate → mart  │   │                      │
+│ FastAPI    │     │ beneficiary_     │    │ dedup, sentinel    │    │ fct_patient_         │   │ Power BI dashboard   │
+│ mock claims)│    │  summary (CSV)   │    │ partition, cast    │    │ risk_scores          │   │ (Simba Athena ODBC)  │
+└────────────┘     └──────────────────┘    └────────────────────┘    └──────────────────────┘   └──────────────────────┘
 ```
 
 **Data flow in one sentence:** a mock FastAPI vendor feed is polled
@@ -214,9 +212,8 @@ Real data-quality problems this pipeline had to solve, not hypothetical ones:
    incremental runs only replace the specific years they touch instead of
    wiping the whole Silver path.
 
-> 📸 **Screenshot placement:** CloudWatch log output showing the run summary
-> (`Bronze records read / Dropped / Silver records written`) →
-> `docs/screenshots/glue_job_cloudwatch_log.png`, right after this section.
+> <img width="1269" height="638" alt="image" src="https://github.com/user-attachments/assets/11fb10f3-27b5-44aa-891f-0ff056bdc0ac" />
+
 
 ---
 
@@ -233,9 +230,9 @@ watermark, pages through the API, writes each page to
 `bronze/inpatient_claims/`, then advances the watermark. `docker-compose.yml`
 runs both services on a shared bridge network.
 
-> 📸 **Screenshot placement:** the n8n workflow canvas, and one execution's
-> success log → `docs/screenshots/n8n_delta_pipeline.png`, right after this
-> section.
+<img width="1127" height="536" alt="image" src="https://github.com/user-attachments/assets/d226fd89-60b3-4b38-bfc8-a72513cb8e5c" />
+<img width="1269" height="640" alt="image" src="https://github.com/user-attachments/assets/4076af66-474a-4271-bf7e-77b4f047f239" />
+
 
 ---
 
@@ -292,9 +289,10 @@ excludes `claim_year = 1900` sentinel records with an explicit, commented
 `WHERE` clause at this layer — not silently filtered upstream, preserving the
 audit trail built into Silver.
 
-> 📸 **Screenshot placement:** `dbt run`/`dbt test` terminal output showing
-> 6/6 models and 4/4 tests passing → `docs/screenshots/dbt_run_success.png`,
-> right after this section.
+<img width="1280" height="674" alt="dbt docs 1" src="https://github.com/user-attachments/assets/61be8bb2-a3c3-409a-86f8-f099cd2fc5a4" />
+<img width="1280" height="672" alt="dbt docs 2" src="https://github.com/user-attachments/assets/ac51b079-c1bf-4480-b6fe-c0332f81305f" />
+<img width="1280" height="676" alt="dbt flow" src="https://github.com/user-attachments/assets/d405238c-59c1-4670-aa0b-63a0e4fc1d68" />
+
 
 ---
 
@@ -341,7 +339,6 @@ strict clinical readmission-prediction tool.
 
 > 📸 **Screenshot placement:** the Athena query result panel showing the
 > 303,396-row feature pull → `docs/screenshots/athena_ml_feature_query.png`,
-> right after this section.
 
 ---
 
@@ -350,10 +347,9 @@ strict clinical readmission-prediction tool.
 Connected directly to the Gold mart via the Simba Athena ODBC driver — no
 data duplication, the dashboard reads the same table the ML model trains on.
 
-> 📸 **Screenshot placement:** full dashboard screenshot →
-> `docs/screenshots/powerbi_dashboard_overview.png`, right after this
-> section intro, followed by the individual visuals below if you want them
-> broken out separately.
+<img width="1280" height="762" alt="power bi dashboard" src="https://github.com/user-attachments/assets/adf967f0-5ae9-452a-b858-cba945cbd06f" />
+<img width="1173" height="662" alt="Added conditional columns" src="https://github.com/user-attachments/assets/15f83ea2-a114-401f-9d56-755fec13ad3f" />
+
 
 - **Population risk trend** — average `raw_raf_score` by payment year.
 - **Risk tier distribution** — patients segmented into Low/Medium/High risk
